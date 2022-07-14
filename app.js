@@ -1,9 +1,8 @@
 import { app, uuid } from 'mu';
 import services from '/config/rules.js';
+import env from './config.js';
 import bodyParser from 'body-parser';
 import dns from 'dns';
-//Might need to enable the following on newer versions of NodeJS:
-//import process from 'node:process';
 import fetch from 'node-fetch';
 
 // Also parse application/json as json
@@ -17,8 +16,7 @@ app.use(
 );
 
 // Log server config if requested
-if (process.env['LOG_SERVER_CONFIGURATION'])
-  console.log(JSON.stringify(services));
+if (env.LOG_SERVER_CONFIGURATION) console.log(JSON.stringify(services));
 
 app.get('/', function (req, res) {
   res.status(200);
@@ -26,8 +24,8 @@ app.get('/', function (req, res) {
 });
 
 app.post('/', function (req, res) {
-  if (process.env['LOG_REQUESTS'])
-    console.log('Logging request body', req.body);
+  //Logging
+  if (env.LOG_REQUESTS) console.log('Logging request body', req.body);
 
   const changeSets = req.body.changeSets;
 
@@ -54,7 +52,7 @@ async function informWatchers(changeSets, res, muCallIdTrail) {
   services.map(async (entry) => {
     // for each entity
     //Logging
-    if (process.env['DEBUG_DELTA_MATCH'])
+    if (env.DEBUG_DELTA_MATCH)
       console.log(`Checking if we want to send to ${entry.callback.url}`);
 
     const matchSpec = entry.match;
@@ -65,10 +63,7 @@ async function informWatchers(changeSets, res, muCallIdTrail) {
     );
 
     //Logging
-    if (
-      process.env['DEBUG_TRIPLE_MATCHES_SPEC'] &&
-      entry.options.ignoreFromSelf
-    )
+    if (env.DEBUG_TRIPLE_MATCHES_SPEC && entry.options.ignoreFromSelf)
       console.log(
         `There are ${
           originFilteredChangeSets.length
@@ -82,7 +77,7 @@ async function informWatchers(changeSets, res, muCallIdTrail) {
 
     if (matchSpecFilteredChangeSets.length > 0) {
       //Logging
-      if (process.env['DEBUG_DELTA_SEND'])
+      if (env.DEBUG_DELTA_SEND)
         console.log(
           `Going to send ${entry.callback.method} to ${entry.callback.url}`
         );
@@ -104,7 +99,7 @@ function tripleMatchesSpec(triple, matchSpec) {
   // form of triple is {s, p, o}, same as matchSpec
 
   //Logging
-  if (process.env['DEBUG_TRIPLE_MATCHES_SPEC'])
+  if (env.DEBUG_TRIPLE_MATCHES_SPEC)
     console.log(
       `Does ${JSON.stringify(triple)} match ${JSON.stringify(matchSpec)}?`
     );
@@ -116,8 +111,7 @@ function tripleMatchesSpec(triple, matchSpec) {
 
     if (subMatchSpec && !subMatchValue) {
       //Logging
-      if (process.env['DEBUG_TRIPLE_MATCHES_SPEC'])
-        console.log('Triple matches spec? NO');
+      if (env.DEBUG_TRIPLE_MATCHES_SPEC) console.log('Triple matches spec? NO');
       return false;
     }
 
@@ -125,15 +119,14 @@ function tripleMatchesSpec(triple, matchSpec) {
     for (let subKey in subMatchSpec)
       if (subMatchSpec[subKey] !== subMatchValue[subKey]) {
         //Logging
-        if (process.env['DEBUG_TRIPLE_MATCHES_SPEC'])
+        if (env.DEBUG_TRIPLE_MATCHES_SPEC)
           console.log('Triple matches spec? NO');
         return false;
       }
   }
 
   //Logging
-  if (process.env['DEBUG_TRIPLE_MATCHES_SPEC'])
-    console.log('Triple matches spec? YES');
+  if (env.DEBUG_TRIPLE_MATCHES_SPEC) console.log('Triple matches spec? YES');
   return true; // no false matches found, let's send a response
 }
 
@@ -214,7 +207,7 @@ async function sendRequest(entry, changeSets, muCallIdTrail) {
     requestObject.body = formatChangesetBody(changeSets, entry.options);
 
   //Logging
-  if (process.env['DEBUG_DELTA_SEND'])
+  if (env.DEBUG_DELTA_SEND)
     console.log(
       `Executing send ${requestObject.method} to ${entry.callback.url}`
     );
@@ -222,7 +215,7 @@ async function sendRequest(entry, changeSets, muCallIdTrail) {
   try {
     await fetch(entry.callback.url, requestObject);
     //Logging
-    if (process.env['DEBUG_DELTA_SEND'])
+    if (env.DEBUG_DELTA_SEND)
       console.log(
         `Send ${requestObject.method} to ${entry.callback.url} successful`
       );
